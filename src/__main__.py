@@ -1,5 +1,5 @@
 import os
-from person_crawler import CampingBotThreadpool
+from camping_bot import CampingBotThreadpool
 
 from util.io import request_input, request_int
 

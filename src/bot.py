@@ -1,5 +1,7 @@
+from random import random, randrange
 import re
 import os
+import threading
 from time import sleep
 from seleniumwire import webdriver
 from selenium.webdriver.common.proxy import Proxy, ProxyType
@@ -7,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.remote.webelement import WebElement
 
 
 class ProxyManager:
@@ -16,6 +19,8 @@ class ProxyManager:
             self.count = 0
 
     def __init__(self, file="config/proxies.txt"):
+        self.count_lock = threading.Lock()
+
         def get_proxies(file):
             f = open(file, "r")
             regex = r"(.+:\d+):(.+):(.+)"
@@ -37,8 +42,9 @@ class ProxyManager:
 
     @property
     def proxy(self):
-        p = min(self.proxies, key=lambda p: p.count)
-        p.count += 1
+        with self.count_lock:
+            p = min(self.proxies, key=lambda x: x.count)
+            p.count += 1
 
         return p.addr
 
@@ -99,6 +105,7 @@ class Bot:
         )
 
     def click_element(self, element, attempts=5):
+        sleep(0.15 + random() * 0.05)
         count = 0
         while count < attempts:
             try:
@@ -106,6 +113,7 @@ class Bot:
                     lambda driver: expected_conditions.element_to_be_clickable(element)
                 )
                 element.click()
+                sleep(0.15 + random() * 0.05)
                 return
             except WebDriverException as e:
                 if "is not clickable at point" in str(e) and count + 1 < attempts:
@@ -115,3 +123,10 @@ class Bot:
                     raise e
 
             sleep(1)
+
+    def wait_for_element(self, element_lambda) -> WebElement:
+        WebDriverWait(self.driver, 20).until(
+            lambda driver: element_lambda()
+            and expected_conditions.element_to_be_clickable(element_lambda())
+        )
+        return element_lambda()
