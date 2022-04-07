@@ -1,8 +1,5 @@
 import re
-import requests
-import shutil
 import os
-import threading
 from time import sleep
 from seleniumwire import webdriver
 from selenium.webdriver.common.proxy import Proxy, ProxyType
@@ -46,7 +43,7 @@ class ProxyManager:
         return p.addr
 
 
-class WebCrawler:
+class Bot:
     def __init__(self, proxy, headless=True, show_images=False, index=0):
         seleniumwire_options = {
             "proxy": {
@@ -81,7 +78,10 @@ class WebCrawler:
         self.driver = webdriver.Chrome(
             options=chrome_options,
             seleniumwire_options=seleniumwire_options,
-            service_args=["--verbose", "--log-path=/home/jordan/log.log"],
+            service_args=[
+                "--verbose",
+                "--log-path=" + os.path.abspath(os.path.join(os.getcwd(), "log.log")),
+            ],
         )
         self.wait_for_document()
 
@@ -97,13 +97,6 @@ class WebCrawler:
             lambda driver: driver.execute_script("return document.readyState")
             == "complete"
         )
-
-    def save_image(self, element, dir):
-        response = requests.get(element.get_attribute("src"), stream=True)
-        os.makedirs(os.path.dirname(dir), exist_ok=True)
-        with open(dir, "wb") as out_file:
-            shutil.copyfileobj(response.raw, out_file)
-        del response
 
     def click_element(self, element, attempts=5):
         count = 0
